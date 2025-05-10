@@ -1,91 +1,73 @@
 
 import streamlit as st
 import pandas as pd
-import filters_sidebar_grouped_dynamic as filters_sidebar
+import yfinance as yf
+import base64
 import os
-import json
 
-PRESETS_DIR = "filter_presets"
-os.makedirs(PRESETS_DIR, exist_ok=True)
+# Page config and style
+st.set_page_config(page_title="Wolf Screener", layout="wide")
+st.markdown("<style>div[data-testid='column']{padding-top: 0rem;} .small-icon {cursor:pointer;}</style>", unsafe_allow_html=True)
 
-# Sample data
-data = {
-    "Exchange": ["NYSE", "NASDAQ"],
-    "Country": ["USA", "China"],
-    "Market Cap": ["Large", "Small"],
-    "Price": [100, 20],
-    "P/E Ratio": ["15", "30"],
-    "P/B Ratio": ["2", "5"],
-    "PEG Ratio": ["1.5", "3"],
-    "EPS Growth (YoY)": ["10%", "-5%"],
-    "Revenue Growth (YoY)": ["20%", "5%"],
-    "EPS Growth This Year": ["-10%", "15%"],
-    "EPS Growth qtr over qtr": ["0%", "25%"],
-    "Short Float": ["Low", "High"],
-    "Float": ["Under 10M", "Over 50M"],
-    "Float Rotation": ["1x-10x", "Over 10x"],
-    "Gap": ["Up", "Down"],
-    "Change From Open": ["Up", "Down"],
-    "Performance": ["Today Up", "Month Down"],
-    "Performance 2": ["Week Up", "Week Down"],
-    "SMA20": ["Price below", "Price above"],
-    "SMA50": ["Price above", "Price below"],
-    "SMA200": ["Crossed", "Price below"],
-    "EMA 9": ["Above", "Below"],
-    "RSI (14)": ["Overbought", "Oversold"],
-    "ATR": ["Over 0.25", "Under 0.5"],
-    "IPO Date": ["Today", "Last year"],
-    "Number of Trades": [5000, 30000]
-}
+# Load funnel icon
+def load_filter_icon():
+    with open("filter_icon.png", "rb") as f:
+        data = f.read()
+    b64 = base64.b64encode(data).decode("utf-8")
+    return f'<img class="small-icon" src="data:image/png;base64,{b64}" width="25" title="Toggle Column Filter" />'
 
-df = pd.DataFrame(data)
+# Toggle for filter
+if "show_filters" not in st.session_state:
+    st.session_state["show_filters"] = False
 
-st.set_page_config(layout="wide")
-st.title("📈 Stock Screener - PREMIUM PRO V2")
+# Logo and header
+st.sidebar.image("https://i.imgur.com/yOAdO7R.png", width=180)
+st.markdown(
+    """
+    <div style='display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;'>
+        <img src='https://i.imgur.com/yOAdO7R.png' width='40'/>
+        <h2 style='margin: 0; color: #c5a46d;'>🐺 Wolf Screener</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-# Show filters
-filters_sidebar.show_sidebar_filters(df)
+# Load sample tickers
+tickers = ["AAPL", "MSFT", "GOOG", "NVDA"]
 
-# Column selector
-st.sidebar.subheader("🧩 Column Filter")
-all_columns = list(df.columns)
-default_cols = st.session_state.get("selected_columns", all_columns[:10])
-selected_cols = st.multiselect("Select columns to display", all_columns, default=default_cols, key="selected_columns")
+@st.cache_data(ttl=3600)
+def load_data():
+    rows = []
+    for t in tickers:
+        try:
+            info = yf.Ticker(t).info
+            rows.append({
+                "Symbol": t,
+                "Price": info.get("regularMarketPrice", 0),
+                "P/E Ratio": info.get("trailingPE", 0),
+                "Market Cap": "Large" if info.get("marketCap", 0) > 1e10 else "Small",
+                "EPS Growth": f"{info.get('earningsQuarterlyGrowth', 0) * 100:.0f}%",
+                "Sector": info.get("sector", "N/A")
+            })
+        except:
+            continue
+    return pd.DataFrame(rows)
 
-# Apply filters
-filtered_df = df.copy()
+df = load_data()
 
-# List of simple equality-based filters
-simple_filters = [
-    "Exchange", "Country", "Market Cap", "Short Float", "Float",
-    "Float Rotation", "Gap", "Change From Open", "Performance",
-    "Performance 2", "SMA20", "SMA50", "SMA200", "EMA 9",
-    "RSI (14)", "ATR", "IPO Date"
-]
+# Filter toggle UI
+col1, col2 = st.columns([12, 1])
+with col1:
+    st.markdown("### Stock Overview")
+with col2:
+    if st.button(load_filter_icon(), key="funnel", help="Toggle Column Filters"):
+        st.session_state["show_filters"] = not st.session_state["show_filters"]
 
-for key in simple_filters:
-    user_input = st.session_state.get(f"filter_{key.lower().replace(' ', '_')}")
-    if user_input and user_input != "Any":
-        filtered_df = filtered_df[filtered_df[key] == user_input]
+# Column filter toggle logic
+if st.session_state["show_filters"]:
+    selected_cols = st.multiselect("Select columns to show", list(df.columns), default=list(df.columns))
+else:
+    selected_cols = list(df.columns)
 
-
-# Numeric filters (Price and Number of Trades)
-price_low = st.session_state.get("filter_price_low", 0)
-price_high = st.session_state.get("filter_price_high", 0)
-if price_low and price_high:
-    filtered_df = filtered_df[
-        (filtered_df["Price"].astype(float) >= float(price_low)) &
-        (filtered_df["Price"].astype(float) <= float(price_high))
-    ]
-
-trades_range = st.session_state.get("filter_trades", (0, 50000))
-if trades_range:
-    filtered_df = filtered_df[
-        (filtered_df["Number of Trades"].astype(int) >= trades_range[0]) &
-        (filtered_df["Number of Trades"].astype(int) <= trades_range[1])
-    ]
-
-# Show filtered data
-
-st.header("Stock Data")
-st.dataframe(filtered_df[selected_cols], use_container_width=True)
+# Show stock data
+st.dataframe(df[selected_cols], use_container_width=True)
