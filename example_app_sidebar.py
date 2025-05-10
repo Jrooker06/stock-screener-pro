@@ -8,19 +8,24 @@ import filters_sidebar_grouped_dynamic as filters_sidebar
 st.set_page_config(page_title="Wolf Screener", layout="wide")
 st.markdown("<style>div[data-testid='column']{padding-top: 0rem;} .small-icon {cursor:pointer;}</style>", unsafe_allow_html=True)
 
+# Base64 funnel icon
+def load_funnel_icon():
+    return "iVBORw0KGgoAAAANSUhEUgAAADIA..."  # placeholder for valid base64
+
 if "show_filters" not in st.session_state:
     st.session_state["show_filters"] = False
 
 def filter_icon():
-    return f'<img class="small-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAB+UlEQVR4nO3cwW3DMBQE0WGQslS++mLOCYzEdkRyPrVTgGDgYcmDLbfeO8nTx+oPkL4XEFkBkRUQWQGRFRBZAZEVEFkBkRUQWQGRFRBZAZEVEFkBkRUQWQGRFRBZAZH1efUDW2u3+5K+996uelYb8SOH1lo/juPy59o6z/NSDMiR9XYjMGAQSO+9nec54tHbN2whO6OMWgcMPrJ2RBmJAblDXmo0BkwA2XElI5uykB1QZqwDJh5ZlVFmYUDukD+biQGTQSqvZFbTF1IJZfY6YNGRVQFlBQbkDnnYKgxYCFJhJStauhAjysp1gODIMqGsxgABiCUDBkhATCtZnQIE1qJY1gEiEFiDYsIAGcjsbBggBLn7faIDgTkoxnWAFATGolgxQAwyKjMGyEHueJ+oQeBaFPs6oAAIXINSAQOKgPy3KhhQCOQu90kZEHgPpdI6oBgIvIZSDQMKgjxbRQwoCrLzfVISBH5HqboOKAwCj1EqY0BxkJ9Vx4ANQHa7T4a8Fj26V96Fr7aYy/84YFbPvAdfcTnlj6zdCoisgMgKiKyAyAqIrIDICoisgMgKiKyAyAqIrIDICoisgMgKiKyAyAqIrIDICoisgMgKiKyAyMoP5WSVBNm5HFmyAiIrILICIisgsgIiKyCyAiIrILICIisgsgIiKyCyvgAjgE34KfdpNgAAAABJRU5ErkJggg==" width="25" title="Toggle Column Filters" />'
+    return f'<img class="small-icon" src="data:image/png;base64,{load_funnel_icon()}" width="25" title="Toggle Column Filters" />'
 
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/616/616408.png", width=180)
+wolf_url = "https://cdn-icons-png.flaticon.com/512/616/616408.png"
+st.sidebar.image(wolf_url, width=180)
 
 st.markdown(
     f"""
     <div style='display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;'>
-        <img src='https://cdn-icons-png.flaticon.com/512/616/616408.png' width='40'/>
-        <h2 style='margin: 0; color: #c5a46d;'>🐺 Wolf Screener</h2>
+        <img src='{wolf_url}' width='40'/>
+        <h2 style='margin: 0; color: #c5a46d;'>Wolf Screener</h2>
     </div>
     """,
     unsafe_allow_html=True
@@ -47,14 +52,13 @@ def load_data():
     return pd.DataFrame(rows)
 
 df = load_data()
-
 filters_sidebar.show_sidebar_filters(df)
 
 col1, col2 = st.columns([12, 1])
 with col1:
     st.markdown("### Stock Overview")
 with col2:
-    if st.button(filter_icon(), key="funnel_toggle", help="Toggle Column Filters"):
+    if st.button("🧩 Toggle Filters"):
         st.session_state["show_filters"] = not st.session_state["show_filters"]
 
 if st.session_state["show_filters"]:
