@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import base64
-import filters_sidebar_grouped_dynamic as filters_sidebar
+import filters_sidebar_grouped_dynamic_v2 as filters_sidebar
 
 st.set_page_config(page_title="Wolf Screener", layout="wide")
 st.markdown("<style>div[data-testid='column']{padding-top: 0rem;} .small-icon {cursor:pointer;}</style>", unsafe_allow_html=True)
