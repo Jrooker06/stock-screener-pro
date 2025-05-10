@@ -2,8 +2,13 @@
 import streamlit as st
 import pandas as pd
 import filters_sidebar_grouped_dynamic as filters_sidebar
+import os
+import json
 
-# Example dataset for testing
+PRESETS_DIR = "filter_presets"
+os.makedirs(PRESETS_DIR, exist_ok=True)
+
+# Sample data
 data = {
     "Exchange": ["NYSE", "NASDAQ"],
     "Country": ["USA", "China"],
@@ -35,9 +40,52 @@ data = {
 
 df = pd.DataFrame(data)
 
-st.title("📈 Stock Screener - PREMIUM PRO V2 VERSION")
+st.set_page_config(layout="wide")
+st.title("📈 Stock Screener - PREMIUM PRO V2")
 
+# Show filters
 filters_sidebar.show_sidebar_filters(df)
 
+# Column selector
+st.sidebar.subheader("🧩 Column Filter")
+all_columns = list(df.columns)
+default_cols = st.session_state.get("selected_columns", all_columns[:10])
+selected_cols = st.multiselect("Select columns to display", all_columns, default=default_cols, key="selected_columns")
+
+# Apply filters
+filtered_df = df.copy()
+
+# List of simple equality-based filters
+simple_filters = [
+    "Exchange", "Country", "Market Cap", "Short Float", "Float",
+    "Float Rotation", "Gap", "Change From Open", "Performance",
+    "Performance 2", "SMA20", "SMA50", "SMA200", "EMA 9",
+    "RSI (14)", "ATR", "IPO Date"
+]
+
+for key in simple_filters:
+    user_input = st.session_state.get(f"filter_{key.lower().replace(' ', '_')}")
+    if user_input and user_input != "Any":
+        filtered_df = filtered_df[filtered_df[key] == user_input]
+
+
+# Numeric filters (Price and Number of Trades)
+price_low = st.session_state.get("filter_price_low", 0)
+price_high = st.session_state.get("filter_price_high", 0)
+if price_low and price_high:
+    filtered_df = filtered_df[
+        (filtered_df["Price"].astype(float) >= float(price_low)) &
+        (filtered_df["Price"].astype(float) <= float(price_high))
+    ]
+
+trades_range = st.session_state.get("filter_trades", (0, 50000))
+if trades_range:
+    filtered_df = filtered_df[
+        (filtered_df["Number of Trades"].astype(int) >= trades_range[0]) &
+        (filtered_df["Number of Trades"].astype(int) <= trades_range[1])
+    ]
+
+# Show filtered data
+
 st.header("Stock Data")
-st.dataframe(df)
+st.dataframe(filtered_df[selected_cols], use_container_width=True)
