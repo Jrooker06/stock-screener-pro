@@ -2,32 +2,25 @@
 import streamlit as st
 import pandas as pd
 import yfinance as yf
-import base64
 import filters_sidebar_grouped_dynamic as filters_sidebar
 
-# Page config and theme
+# Layout & Theme
 st.set_page_config(page_title="Wolf Screener", layout="wide")
 st.markdown("<style>div[data-testid='column']{padding-top: 0rem;} .small-icon {cursor:pointer;}</style>", unsafe_allow_html=True)
 
-# Load funnel icon
-def load_filter_icon():
-    with open("filter_icon.png", "rb") as f:
-        data = f.read()
-    b64 = base64.b64encode(data).decode("utf-8")
-    return f'<img class="small-icon" src="data:image/png;base64,{b64}" width="25" title="Toggle Column Filter" />'
-
-# Funnel toggle state
+# Toggle column filters
 if "show_filters" not in st.session_state:
     st.session_state["show_filters"] = False
 
-# Sidebar logo
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/616/616408.png", width=180)
+# Inline funnel icon
+def filter_icon():
+    return f'<img class="small-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAB+UlEQVR4nO3cwW3DMBQE0WGQslS++mLOCYzEdkRyPrVTgGDgYcmDLbfeO8nTx+oPkL4XEFkBkRUQWQGRFRBZAZEVEFkBkRUQWQGRFRBZAZEVEFkBkRUQWQGRFRBZAZH1efUDW2u3+5K+996uelYb8SOH1lo/juPy59o6z/NSDMiR9XYjMGAQSO+9nec54tHbN2whO6OMWgcMPrJ2RBmJAblDXmo0BkwA2XElI5uykB1QZqwDJh5ZlVFmYUDukD+biQGTQSqvZFbTF1IJZfY6YNGRVQFlBQbkDnnYKgxYCFJhJStauhAjysp1gODIMqGsxgABiCUDBkhATCtZnQIE1qJY1gEiEFiDYsIAGcjsbBggBLn7faIDgTkoxnWAFATGolgxQAwyKjMGyEHueJ+oQeBaFPs6oAAIXINSAQOKgPy3KhhQCOQu90kZEHgPpdI6oBgIvIZSDQMKgjxbRQwoCrLzfVISBH5HqboOKAwCj1EqY0BxkJ9Vx4ANQHa7T4a8Fj26V96Fr7aYy/84YFbPvAdfcTnlj6zdCoisgMgKiKyAyAqIrIDICoisgMgKiKyAyAqIrIDICoisgMgKiKyAyAqIrIDICoisgMgKiKyAyMoP5WSVBNm5HFmyAiIrILICIisgsgIiKyCyAiIrILICIisgsgIiKyCyvgAjgE34KfdpNgAAAABJRU5ErkJggg==" width="25" title="Toggle Column Filters" />'
 
 # Header
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/616/616408.png", width=180)
 st.markdown(
     """
     <div style='display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;'>
-        <img src='https://cdn-icons-png.flaticon.com/512/616/616408.png' width='40'/>
         <h2 style='margin: 0; color: #c5a46d;'>🐺 Wolf Screener</h2>
     </div>
     """,
@@ -57,22 +50,22 @@ def load_data():
 
 df = load_data()
 
-# Show sidebar filters
+# Show filters
 filters_sidebar.show_sidebar_filters(df)
 
-# Column filter button and UI
+# Column filter UI
 col1, col2 = st.columns([12, 1])
 with col1:
     st.markdown("### Stock Overview")
 with col2:
-    if st.button(load_filter_icon(), key="funnel", help="Toggle Column Filters"):
+    if st.button(filter_icon(), key="funnel_toggle", help="Toggle Column Filters"):
         st.session_state["show_filters"] = not st.session_state["show_filters"]
 
-# Toggle column selector
+# Apply column filtering
 if st.session_state["show_filters"]:
     selected_cols = st.multiselect("Select columns to show", list(df.columns), default=list(df.columns))
 else:
     selected_cols = list(df.columns)
 
-# Display final table
+# Show Data
 st.dataframe(df[selected_cols], use_container_width=True)
